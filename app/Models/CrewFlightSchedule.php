@@ -2,10 +2,38 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Relations\Pivot;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class CrewFlightSchedule extends Model
+class CrewFlightSchedule extends Pivot
 {
-    use HasFactory;
+    use HasUuids, SoftDeletes;
+
+    public $incrementing = false;
+
+    protected $table = 'crew_flight_schedules';
+
+    protected $fillable = [
+        'crew_id',
+        'flight_schedule_id',
+        'role_in_flight',
+        'assigned_at',
+        'created_by',
+        'updated_by',
+    ];
+
+    protected $casts = [
+        'assigned_at' => 'datetime',
+    ];
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updater()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
 }
