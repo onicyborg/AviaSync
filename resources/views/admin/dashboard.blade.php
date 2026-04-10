@@ -45,7 +45,7 @@
             </div>
         </div>
         <div class="card-body py-5">
-            @if(!empty($activities ?? []) && count($activities))
+            @if(!empty($recentLogs ?? []) && count($recentLogs))
                 <div class="table-responsive">
                     <table class="table align-middle table-row-dashed fs-6">
                         <thead>
@@ -57,18 +57,35 @@
                         </tr>
                         </thead>
                         <tbody class="fw-semibold text-gray-700">
-                        @foreach($activities as $a)
+                        @foreach($recentLogs as $log)
                             <tr>
-                                <td>{{ optional($a->created_at)->format('d M Y H:i') }}</td>
-                                <td>{{ optional($a->user)->name ?? '-' }}</td>
-                                <td>{{ $a->method }}</td>
+                                <td>{{ optional($log->created_at)->format('d M Y H:i') }}</td>
+                                <td>{{ optional($log->user)->name ?? 'Guest' }}</td>
+                                <td>
+                                    @php
+                                        $method = strtoupper($log->method ?? '-');
+                                        $badgeClass = match ($method) {
+                                            'GET' => 'badge-light-primary',
+                                            'POST' => 'badge-light-success',
+                                            'PUT', 'PATCH' => 'badge-light-warning',
+                                            'DELETE' => 'badge-light-danger',
+                                            default => 'badge-light-secondary',
+                                        };
+                                    @endphp
+                                    <span class="badge {{ $badgeClass }}">{{ $method }}</span>
+                                </td>
                                 <td class="text-truncate" style="max-width: 420px;">
-                                    {{ $a->url }}
+                                    {{ $log->url }}
                                 </td>
                             </tr>
                         @endforeach
                         </tbody>
                     </table>
+                </div>
+                <div class="text-center mt-4">
+                    <a href="{{ route('admin.system-logs.index') }}" class="btn btn-link text-primary fw-semibold">
+                        Lihat Semua Aktivitas <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
                 </div>
             @else
                 <div class="text-muted">Belum ada aktivitas.</div>

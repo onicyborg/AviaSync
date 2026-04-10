@@ -18,8 +18,8 @@ class DashboardController extends Controller
             ->where('status', 'active')
             ->whereHas('healthRecords', fn ($query) => $query->where('status', 'fit'))
             ->count();
-        $activities = SystemLog::with('user')->latest()->limit(10)->get();
+        $recentLogs = SystemLog::with('user')->latest()->limit(10)->get();
 
-        return view('admin.dashboard', compact('totalCrew', 'activeFlights', 'readyCrew', 'activities'));
+        return view('admin.dashboard', compact('totalCrew', 'activeFlights', 'readyCrew', 'recentLogs'));
     }
 }

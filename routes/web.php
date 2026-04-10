@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\CrewCertificationController;
 use App\Http\Controllers\Admin\CrewHealthRecordController;
 use App\Http\Controllers\Admin\FlightScheduleController;
 use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\SystemLogController;
 
 /*
 |--------------------------------------------------------------------------
@@ -44,6 +45,8 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->group(function () {
 
     Route::get('reports', [ReportController::class, 'index'])->name('admin.reports.index');
     Route::post('reports/export', [ReportController::class, 'export'])->name('admin.reports.export');
+
+    Route::get('system-logs', [SystemLogController::class, 'index'])->name('admin.system-logs.index');
     // Rute CRUD Crew, dll
 });
 

@@ -52,6 +52,15 @@
                             <span class="menu-title">Reports</span>
                         </a>
                     </div>
+
+                    <div class="menu-item">
+                        <a class="menu-link {{ request()->routeIs('admin.system-logs.*') ? 'active' : '' }}" href="{{ route('admin.system-logs.index') }}">
+                            <span class="menu-icon">
+                                <i class="bi bi-clipboard-data fs-2"></i>
+                            </span>
+                            <span class="menu-title">System Logs</span>
+                        </a>
+                    </div>
                 @else
                     <div class="menu-item">
                         <a class="menu-link {{ request()->routeIs('crew.dashboard') ? 'active' : '' }}"
