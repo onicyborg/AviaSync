@@ -36,7 +36,7 @@
                     </div>
 
                     <div class="menu-item">
-                        <a class="menu-link" href="#">
+                        <a class="menu-link {{ request()->routeIs('admin.flight-schedules.*') ? 'active' : '' }}" href="{{ route('admin.flight-schedules.index') }}">
                             <span class="menu-icon">
                                 <i class="bi bi-airplane-engines fs-2"></i>
                             </span>

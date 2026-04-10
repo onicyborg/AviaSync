@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ManageCrewController;
 use App\Http\Controllers\Admin\CrewCertificationController;
 use App\Http\Controllers\Admin\CrewHealthRecordController;
+use App\Http\Controllers\Admin\FlightScheduleController;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,6 +32,14 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->group(function () {
         ->except(['index', 'show']);
     Route::resource('crew.health-records', CrewHealthRecordController::class, ['as' => 'admin'])
         ->except(['index', 'show']);
+
+    Route::resource('flight-schedules', FlightScheduleController::class, ['as' => 'admin']);
+    Route::post('flight-schedules/{flight_schedule}/auto-assign', [FlightScheduleController::class, 'autoAssign'])
+        ->name('admin.flight-schedules.auto-assign');
+    Route::post('flight-schedules/{flight_schedule}/assign-crew', [FlightScheduleController::class, 'assignCrew'])
+        ->name('admin.flight-schedules.assign-crew');
+    Route::delete('flight-schedules/{flight_schedule}/crew/{assignment}', [FlightScheduleController::class, 'removeCrew'])
+        ->name('admin.flight-schedules.remove-crew');
     // Rute CRUD Crew, dll
 });
 

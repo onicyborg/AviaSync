@@ -43,6 +43,7 @@ class Crew extends Model
         return $this->belongsToMany(FlightSchedule::class, 'crew_flight_schedules')
                     ->using(CrewFlightSchedule::class)
                     ->withPivot('id', 'role_in_flight', 'assigned_at', 'created_by', 'updated_by', 'deleted_at')
+                    ->wherePivotNull('deleted_at')
                     ->withTimestamps();
     }
 

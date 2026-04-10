@@ -11,6 +11,8 @@ class FlightSchedule extends Model
 {
     use HasFactory, HasUuids, SoftDeletes;
 
+    public const STATUSES = ['scheduled', 'active', 'completed', 'cancelled'];
+
     protected $fillable = [
         'flight_number',
         'origin',
@@ -32,6 +34,7 @@ class FlightSchedule extends Model
         return $this->belongsToMany(Crew::class, 'crew_flight_schedules')
             ->using(CrewFlightSchedule::class)
             ->withPivot('id', 'role_in_flight', 'assigned_at', 'created_by', 'updated_by', 'deleted_at')
+            ->wherePivotNull('deleted_at')
             ->withTimestamps();
     }
 
