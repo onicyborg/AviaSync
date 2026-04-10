@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\ManageCrewController;
 use App\Http\Controllers\Admin\CrewCertificationController;
 use App\Http\Controllers\Admin\CrewHealthRecordController;
 use App\Http\Controllers\Admin\FlightScheduleController;
+use App\Http\Controllers\Admin\ReportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -40,6 +41,9 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->group(function () {
         ->name('admin.flight-schedules.assign-crew');
     Route::delete('flight-schedules/{flight_schedule}/crew/{assignment}', [FlightScheduleController::class, 'removeCrew'])
         ->name('admin.flight-schedules.remove-crew');
+
+    Route::get('reports', [ReportController::class, 'index'])->name('admin.reports.index');
+    Route::post('reports/export', [ReportController::class, 'export'])->name('admin.reports.export');
     // Rute CRUD Crew, dll
 });
 

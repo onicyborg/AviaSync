@@ -45,7 +45,7 @@
                     </div>
 
                     <div class="menu-item">
-                        <a class="menu-link" href="#">
+                        <a class="menu-link {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}" href="{{ route('admin.reports.index') }}">
                             <span class="menu-icon">
                                 <i class="bi bi-bar-chart fs-2"></i>
                             </span>
