@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsSystemChanges;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CrewFlightSchedule extends Pivot
 {
-    use HasUuids, SoftDeletes;
+    use HasUuids, SoftDeletes, LogsSystemChanges;
 
     public $incrementing = false;
 

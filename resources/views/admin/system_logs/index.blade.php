@@ -27,7 +27,9 @@
                     <tbody class="text-gray-600 fw-semibold">
                         @forelse($logs as $log)
                             <tr>
-                                <td>{{ optional($log->created_at)->format('d M Y H:i:s') }}</td>
+                                <td data-order="{{ optional($log->created_at)->timestamp ?? 0 }}">
+                                    {{ optional($log->created_at)->format('d M Y H:i:s') }}
+                                </td>
                                 <td>{{ optional($log->user)->name ?? 'Guest' }}</td>
                                 @php
                                     $method = strtoupper($log->method ?? '-');
@@ -72,10 +74,6 @@
                         @endforelse
                     </tbody>
                 </table>
-            </div>
-
-            <div class="d-flex justify-content-end mt-4">
-                {{ $logs->links() }}
             </div>
         </div>
     </div>
@@ -149,11 +147,10 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             if (window.DataTable) {
-                new window.DataTable('#systemLogsTable');
+                new window.DataTable('#systemLogsTable', {
+                    order: [[0, 'desc']],
+                });
             }
-
-            const modal = document.getElementById('logDetailModal');
-            const detailButtons = document.querySelectorAll('.btn-log-detail');
 
             const setText = (id, value) => {
                 const el = document.getElementById(id);
@@ -186,27 +183,29 @@
                 }
             };
 
-            detailButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    setText('logDetailUser', button.getAttribute('data-user'));
-                    setText('logDetailEmail', button.getAttribute('data-email'));
-                    setText('logDetailIp', button.getAttribute('data-ip'));
-                    setText('logDetailUrl', button.getAttribute('data-url'));
-                    setText('logDetailAction', button.getAttribute('data-action'));
-                    setText('logDetailTable', `${button.getAttribute('data-table')} / ${button.getAttribute('data-record')}`);
-                    setText('logDetailCreated', button.getAttribute('data-created'));
+            const modal = document.getElementById('logDetailModal');
+            modal?.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+                if (!button) return;
 
-                    const method = button.getAttribute('data-method') || '-';
-                    const badge = document.getElementById('logDetailMethodBadge');
-                    if (badge) {
-                        badge.textContent = method;
-                        badge.className = `badge ${methodBadgeClass(method)}`;
-                    }
+                setText('logDetailUser', button.getAttribute('data-user'));
+                setText('logDetailEmail', button.getAttribute('data-email'));
+                setText('logDetailIp', button.getAttribute('data-ip'));
+                setText('logDetailUrl', button.getAttribute('data-url'));
+                setText('logDetailAction', button.getAttribute('data-action'));
+                setText('logDetailTable', `${button.getAttribute('data-table')} / ${button.getAttribute('data-record')}`);
+                setText('logDetailCreated', button.getAttribute('data-created'));
 
-                    document.getElementById('logDetailPayload').textContent = formatJson(button.getAttribute('data-payload'));
-                    document.getElementById('logDetailOld').textContent = formatJson(button.getAttribute('data-old'));
-                    document.getElementById('logDetailNew').textContent = formatJson(button.getAttribute('data-new'));
-                });
+                const method = button.getAttribute('data-method') || '-';
+                const badge = document.getElementById('logDetailMethodBadge');
+                if (badge) {
+                    badge.textContent = method;
+                    badge.className = `badge ${methodBadgeClass(method)}`;
+                }
+
+                document.getElementById('logDetailPayload').textContent = formatJson(button.getAttribute('data-payload'));
+                document.getElementById('logDetailOld').textContent = formatJson(button.getAttribute('data-old'));
+                document.getElementById('logDetailNew').textContent = formatJson(button.getAttribute('data-new'));
             });
         });
     </script>

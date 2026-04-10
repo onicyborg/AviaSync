@@ -106,21 +106,23 @@
                         </div>
                         @auth
                             <div class="d-flex align-items-center">
-                                <div class="d-none d-md-flex flex-column me-3">
-                                    <span class="fw-semibold text-gray-600 fs-7">Login sebagai</span>
-                                    <span class="fw-bold text-gray-800 fs-6">
-                                        {{ Auth::user()->name ?? 'User' }}
-                                    </span>
-                                    <span class="text-muted fs-8 text-uppercase">
-                                        {{ Auth::user()->role ?? '-' }}
-                                    </span>
-                                </div>
+                                <a href="{{ route('profile') }}" class="d-flex align-items-center text-decoration-none">
+                                    <div class="d-none d-md-flex flex-column me-3 text-start">
+                                        <span class="fw-semibold text-gray-600 fs-7">Login sebagai</span>
+                                        <span class="fw-bold text-gray-800 fs-6">
+                                            {{ Auth::user()->name ?? 'User' }}
+                                        </span>
+                                        <span class="text-muted fs-8 text-uppercase">
+                                            {{ Auth::user()->role ?? '-' }}
+                                        </span>
+                                    </div>
 
-                                <div class="symbol symbol-35px symbol-circle">
-                                    <span class="symbol-label bg-primary text-white fw-bold">
-                                        {{ strtoupper(substr(Auth::user()->name ?? 'U', 0, 1)) }}
-                                    </span>
-                                </div>
+                                    <div class="symbol symbol-35px symbol-circle">
+                                        <span class="symbol-label bg-primary text-white fw-bold">
+                                            {{ strtoupper(substr(Auth::user()->name ?? 'U', 0, 1)) }}
+                                        </span>
+                                    </div>
+                                </a>
 
                                 <div class="ms-3">
                                     <form action="{{ route('logout') }}" method="POST">

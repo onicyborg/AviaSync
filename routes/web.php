@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ManageCrewController;
 use App\Http\Controllers\Admin\CrewCertificationController;
@@ -26,6 +27,11 @@ Route::post('/login', [AuthController::class, 'login'])->name('login.attempt');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::get('/', [DashboardController::class, 'index'])->middleware(['auth', 'role:admin'])->name('admin.dashboard');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+});
 
 Route::prefix('admin')->middleware(['auth', 'role:admin'])->group(function () {
     Route::resource('crew', ManageCrewController::class, ['as' => 'admin'])->except(['create', 'edit']);

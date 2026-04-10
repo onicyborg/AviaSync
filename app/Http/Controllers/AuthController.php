@@ -5,10 +5,11 @@ namespace App\Http\Controllers;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
 
 class AuthController extends Controller
 {
-    public function showLoginForm(): \Illuminate\View\View|RedirectResponse
+    public function showLoginForm(): View|RedirectResponse
     {
         if (Auth::check()) {
             $role = Auth::user()->role;
@@ -65,4 +66,5 @@ class AuthController extends Controller
 
         return redirect()->route('login');
     }
+
 }

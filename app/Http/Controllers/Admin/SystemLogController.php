@@ -13,7 +13,7 @@ class SystemLogController extends Controller
         $logs = SystemLog::query()
             ->with('user')
             ->latest()
-            ->paginate(50);
+            ->get();
 
         return view('admin.system_logs.index', compact('logs'));
     }
