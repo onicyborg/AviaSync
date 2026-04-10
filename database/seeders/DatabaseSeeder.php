@@ -9,6 +9,8 @@ use App\Models\Certification;
 use App\Models\HealthRecord;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
@@ -36,51 +38,108 @@ class DatabaseSeeder extends Seeder
             'created_by' => $admin->id
         ]);
 
-        // 3. Generate 50 Crew secara Acak
-        User::factory(50)->create()->each(function ($user) use ($admin) {
-            // Buat Profil Crew
+        // 3. Generate Crew dengan distribusi posisi & base yang lebih rapi
+        $positions = ['Captain', 'First Officer', 'Purser', 'Flight Attendant'];
+        $bases = ['CGK', 'SUB', 'DPS', 'KNO']; // Jakarta, Surabaya, Denpasar, Medan
+
+        User::factory(40)->create()->each(function ($user, $idx) use ($admin, $positions, $bases) {
+            $position = $positions[$idx % count($positions)];
+            $base = $bases[$idx % count($bases)];
+
             $crew = Crew::factory()->create([
                 'user_id' => $user->id,
+                'position' => $position,
+                'base_location' => $base,
+                'status' => 'active',
                 'created_by' => $admin->id,
             ]);
 
-            // Berikan 2 Sertifikat untuk masing-masing Crew
-            Certification::factory(2)->create([
+            // Sertifikasi: 1 valid (expire 90-180 hari lagi), 1 expired (expire 30-180 hari lalu)
+            Certification::factory()->create([
                 'crew_id' => $crew->id,
+                'status' => 'valid',
+                'expiry_date' => Carbon::now()->addDays(rand(90, 180)),
+                'created_by' => $admin->id,
+            ]);
+            Certification::factory()->create([
+                'crew_id' => $crew->id,
+                'status' => 'expired',
+                'expiry_date' => Carbon::now()->subDays(rand(30, 180)),
                 'created_by' => $admin->id,
             ]);
 
-            // Berikan 2 Rekam Medis untuk masing-masing Crew
-            HealthRecord::factory(2)->create([
+            // Rekam Medis: 2 riwayat terakhir 6 bulan, dengan next_checkup_date sebagian dekat
+            HealthRecord::factory()->create([
                 'crew_id' => $crew->id,
+                'checkup_date' => Carbon::now()->subMonths(rand(4, 6))->startOfDay(),
+                'next_checkup_date' => Carbon::now()->addMonths(rand(1, 3))->startOfDay(),
+                'created_by' => $admin->id,
+            ]);
+            HealthRecord::factory()->create([
+                'crew_id' => $crew->id,
+                'checkup_date' => Carbon::now()->subMonths(rand(1, 3))->startOfDay(),
+                'next_checkup_date' => Carbon::now()->addMonths(rand(3, 6))->startOfDay(),
                 'created_by' => $admin->id,
             ]);
         });
 
-        // 4. Generate 20 Jadwal Penerbangan
-        $flights = FlightSchedule::factory(20)->create([
-            'created_by' => $admin->id,
-        ]);
+        // 4. Generate Jadwal Penerbangan semi-real di rute populer
+        $routes = [
+            ['CGK', 'SUB', 95],
+            ['CGK', 'DPS', 110],
+            ['CGK', 'KNO', 120],
+            ['SUB', 'DPS', 65],
+            ['DPS', 'KNO', 150],
+            ['SUB', 'KNO', 140],
+        ];
+
+        $flights = collect();
+        $startDay = Carbon::now()->startOfDay();
+        $flightCount = 24; // 4 minggu ke depan, 6 rute / pekan
+
+        for ($i = 0; $i < $flightCount; $i++) {
+            $route = $routes[$i % count($routes)];
+            [$origin, $destination, $durationMin] = $route;
+
+            $dep = (clone $startDay)->addDays(rand(1, 28))->addHours(rand(6, 22))->minute(0);
+            $arr = (clone $dep)->addMinutes($durationMin + rand(-10, 15));
+
+            $flights->push(FlightSchedule::create([
+                // Deterministic unique flight numbers within this seeding run
+                'flight_number' => 'AV' . str_pad((string) (100 + $i), 3, '0', STR_PAD_LEFT),
+                'origin' => $origin,
+                'destination' => $destination,
+                'departure_time' => $dep,
+                'arrival_time' => $arr,
+                'status' => 'scheduled',
+                'created_by' => $admin->id,
+                'updated_by' => $admin->id,
+            ]));
+        }
 
         // 5. Tugaskan Crew ke Jadwal Penerbangan (Pivot Table)
         $crews = Crew::all();
 
         foreach ($flights as $flight) {
-            // Ambil 4 crew acak untuk setiap penerbangan
-            $assignedCrews = $crews->random(4); 
-            
-            foreach ($assignedCrews as $index => $crew) {
-                // Tentukan peran acak berdasarkan index looping
-                $roleInFlight = match($index) {
-                    0 => 'Captain',
-                    1 => 'First Officer',
-                    2 => 'Purser',
-                    default => 'Flight Attendant',
-                };
+            // Pilih crew berdasarkan posisi untuk peran penerbangan
+            $captain = $crews->where('position', 'Captain')->random();
+            $fo = $crews->where('position', 'First Officer')->random();
+            $purser = $crews->where('position', 'Purser')->random();
+            $fa = $crews->where('position', 'Flight Attendant')->random();
 
-                $flight->crews()->attach($crew->id, [
-                    'id' => (string) \Illuminate\Support\Str::uuid(), // Generate UUID manual untuk Pivot
-                    'role_in_flight' => $roleInFlight,
+            $assignments = [
+                ['crew' => $captain, 'role' => 'Captain'],
+                ['crew' => $fo, 'role' => 'First Officer'],
+                ['crew' => $purser, 'role' => 'Purser'],
+                ['crew' => $fa, 'role' => 'Flight Attendant'],
+            ];
+
+            foreach ($assignments as $a) {
+                $c = $a['crew'];
+                if (!$c) continue;
+                $flight->crews()->attach($c->id, [
+                    'id' => (string) Str::uuid(),
+                    'role_in_flight' => $a['role'],
                     'assigned_at' => now(),
                     'created_by' => $admin->id,
                 ]);
