@@ -82,7 +82,7 @@
                     </div>
 
                     <div class="menu-item">
-                        <a class="menu-link {{ request()->is('crew/health-records*') ? 'active' : '' }}" href="#">
+                        <a class="menu-link {{ request()->is('crew/health-records*') ? 'active' : '' }}" href="{{ route('crew.health-records.index') }}">
                             <span class="menu-icon">
                                 <i class="bi bi-heart-pulse fs-2"></i>
                             </span>

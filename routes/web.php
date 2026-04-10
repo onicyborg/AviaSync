@@ -12,7 +12,7 @@ use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\SystemLogController;
 use App\Http\Controllers\Crew\CertificationController;
 use App\Http\Controllers\Crew\CrewDashboardController;
-
+use App\Http\Controllers\Crew\HealthRecordController;
 
 /*
 |--------------------------------------------------------------------------
@@ -62,6 +62,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->group(function () {
 Route::prefix('crew')->middleware(['auth', 'role:crew'])->group(function () {
     Route::get('/dashboard', [CrewDashboardController::class, 'index'])->name('crew.dashboard');
     Route::get('/certifications', [CertificationController::class, 'index'])->name('crew.certifications.index');
+    Route::get('/health-records', [HealthRecordController::class, 'index'])->name('crew.health-records.index');
     // Route::get('/my-schedule', [CrewController::class, 'mySchedule'])->name('crew.schedule');
     // Rute view certification, dll
 });
