@@ -29,6 +29,14 @@
     </div>
 
     <div class="card card-flush">
+        <div class="card-header border-0 pt-6">
+            <div class="card-title">
+                <div class="d-flex align-items-center position-relative my-1">
+                    <i class="bi bi-search fs-2 position-absolute ms-4"></i>
+                    <input type="text" class="form-control form-control-solid w-250px ps-12" placeholder="Cari nama atau Employee ID" id="crew_search" />
+                </div>
+            </div>
+        </div>
         <div class="card-body py-5">
             <div class="table-responsive">
                 <table class="table align-middle table-row-dashed fs-6 gy-5" id="crew_table">
@@ -246,9 +254,13 @@
 
             document.addEventListener('DOMContentLoaded', function () {
                 if (window.jQuery && jQuery.fn && jQuery.fn.DataTable) {
-                    jQuery('#crew_table').DataTable({
+                    var dt = jQuery('#crew_table').DataTable({
                         pageLength: 10,
                         ordering: true,
+                    });
+                    var $search = jQuery('#crew_search');
+                    $search.on('keyup change', function(){
+                        dt.search(this.value || '').draw();
                     });
                 }
 

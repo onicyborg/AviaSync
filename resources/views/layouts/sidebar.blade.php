@@ -73,7 +73,7 @@
                     </div>
 
                     <div class="menu-item">
-                        <a class="menu-link {{ request()->is('crew/certifications*') ? 'active' : '' }}" href="#">
+                        <a class="menu-link {{ request()->is('crew/certifications*') ? 'active' : '' }}" href="{{ route('crew.certifications.index') }}">
                             <span class="menu-icon">
                                 <i class="bi bi-patch-check fs-2"></i>
                             </span>
