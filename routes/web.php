@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\CrewHealthRecordController;
 use App\Http\Controllers\Admin\FlightScheduleController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\SystemLogController;
+use App\Http\Controllers\Crew\CrewDashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -57,9 +58,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->group(function () {
 });
 
 Route::prefix('crew')->middleware(['auth', 'role:crew'])->group(function () {
-    Route::get('/dashboard', function () {
-        return view('crew.dashboard');
-    })->name('crew.dashboard');
+    Route::get('/dashboard', [CrewDashboardController::class, 'index'])->name('crew.dashboard');
     // Route::get('/my-schedule', [CrewController::class, 'mySchedule'])->name('crew.schedule');
     // Rute view certification, dll
 });

@@ -71,6 +71,24 @@
                             <span class="menu-title">Dashboard</span>
                         </a>
                     </div>
+
+                    <div class="menu-item">
+                        <a class="menu-link {{ request()->is('crew/certifications*') ? 'active' : '' }}" href="#">
+                            <span class="menu-icon">
+                                <i class="bi bi-patch-check fs-2"></i>
+                            </span>
+                            <span class="menu-title">Certifications</span>
+                        </a>
+                    </div>
+
+                    <div class="menu-item">
+                        <a class="menu-link {{ request()->is('crew/health-records*') ? 'active' : '' }}" href="#">
+                            <span class="menu-icon">
+                                <i class="bi bi-heart-pulse fs-2"></i>
+                            </span>
+                            <span class="menu-title">Health Records</span>
+                        </a>
+                    </div>
                 @endif
 
             </div>

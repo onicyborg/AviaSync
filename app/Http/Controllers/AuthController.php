@@ -46,7 +46,6 @@ class AuthController extends Controller
         }
 
         if ($role === 'crew') {
-            // TODO: redirect to crew dashboard
             return redirect()->route('crew.dashboard');
         }
 
