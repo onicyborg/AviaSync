@@ -60,12 +60,12 @@ APP_ENV=local
 APP_DEBUG=true
 APP_URL=http://127.0.0.1:8000
 
-DB_CONNECTION=pgsql
+DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
-DB_PORT=5432
+DB_PORT=3306
 DB_DATABASE=aviasync
-DB_USERNAME=postgres
-DB_PASSWORD=postgres
+DB_USERNAME=root
+DB_PASSWORD=
 
 # IMPORTANT:
 # Jangan set ASSET_URL (karena URL storage publik di proyek ini wajib pakai url('storage/...'))
