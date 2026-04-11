@@ -67,8 +67,6 @@ DB_DATABASE=aviasync
 DB_USERNAME=root
 DB_PASSWORD=
 
-# IMPORTANT:
-# Jangan set ASSET_URL (karena URL storage publik di proyek ini wajib pakai url('storage/...'))
 ```
 
 ---
