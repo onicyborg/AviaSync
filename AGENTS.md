@@ -856,3 +856,11 @@ Dokumen `Agents.md` ini adalah **template pedoman**. Saat dipakai di proyek lain
 - Pastikan path layout, asset, dan vendor UI mengikuti struktur proyek tersebut.
 - Jika role/prefix route berbeda, sesuaikan bagian middleware dan routing.
 - Jika proyek memilih server-side DataTables atau FormRequest, buat keputusan arsitektur eksplisit dan konsisten di seluruh modul.
+
+---
+
+# 8) Standarisasi Penggunaan Metronic (Khusus AviaSync)
+
+Untuk standarisasi setup dan cara penggunaan komponen Metronic yang dipakai di AviaSync (layout, DataTables, modal CRUD, toastr, image input, select2, FullCalendar), lihat:
+
+- `docs/metronic.md`
