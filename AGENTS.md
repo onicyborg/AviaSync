@@ -11,6 +11,22 @@ Target utama:
 
 ---
 
+## Daftar Isi
+
+- [0) Ringkasan Tech Stack & UI Kit (Laravel 10)](#0-ringkasan-tech-stack--ui-kit-laravel-10)
+- [1) Pola Frontend & Implementasi UI](#1-pola-frontend--implementasi-ui)
+  - [1.1 Struktur Blade, Layout Utama, dan Slot](#11-struktur-blade-layout-utama-dan-slot)
+  - [1.2 Pola CRUD di UI: Modal Create/Edit + Konfirmasi Delete](#12-pola-crud-di-ui-modal-createedit--konfirmasi-delete)
+  - [1.3 Pola Data Display: DataTables](#13-pola-data-display-datatables)
+  - [1.4 Komponen UI Kustom / Kompleks](#14-komponen-ui-kustom--kompleks)
+- [2) Penanganan JavaScript & AJAX](#2-penanganan-javascript--ajax)
+- [3) Notifikasi UI](#3-notifikasi-ui)
+- [4) Kontrol Akses](#4-kontrol-akses-general)
+  - [4.1 Kontrol Akses Statis (Role Tetap)](#41-kontrol-akses-statis-role-tetap)
+  - [4.2 Kontrol Akses Dinamis (Permission/Policy)](#42-kontrol-akses-dinamis-permissionpolicy)
+- [5) Standar System Logs](#5-standar-system-logs)
+- [6) Konvensi Khusus Proyek (Checklist)](#6-konvensi-khusus-proyek-checklist)
+
 # 0) Ringkasan Tech Stack & UI Kit (Laravel 10)
 
 - **Backend**
@@ -546,6 +562,79 @@ Pendekatan dinamis menggunakan permission-key dan/atau policy untuk mengatur aks
 **Prinsip umum:**
 - User dapat memiliki banyak role dan mewarisi banyak permission.
 
+### 4.2.1 How to setup (Dinamis)
+
+- Pilih salah satu pendekatan berikut dan terapkan konsisten di seluruh proyek.
+
+- Opsi A — Native Gate/Policy Laravel:
+  1) Buat Policy untuk model terkait
+     ```bash
+     php artisan make:policy EntityPolicy --model=Entity
+     ```
+  2) Daftarkan Policy di `App\Providers\AuthServiceProvider`
+     ```php
+     protected $policies = [
+         App\Models\Entity::class => App\Policies\EntityPolicy::class,
+     ];
+     ```
+  3) Implementasikan metode seperti `view`, `create`, `update`, `delete` di Policy.
+  4) Pakai middleware `can:<ability>` pada route, atau panggil `Gate::authorize('<ability>', $entity)` / `$this->authorize('<ability>', $entity)` di controller.
+
+- Opsi B — Paket spatie/laravel-permission:
+  1) Instal & publish migrasi
+     ```bash
+     composer require spatie/laravel-permission
+     php artisan vendor:publish --provider="Spatie\\Permission\\PermissionServiceProvider"
+     php artisan migrate
+     ```
+  2) Tambahkan trait pada model `User`
+     ```php
+     use Spatie\Permission\Traits\HasRoles;
+
+     class User extends Authenticatable {
+         use HasRoles; // otomatis memakai guard "web" kecuali diubah
+     }
+     ```
+  3) Seed roles & permissions (contoh minimal)
+     ```php
+     use Spatie\Permission\Models\Role;
+     use Spatie\Permission\Models\Permission;
+
+     $manage = Permission::firstOrCreate(['name' => 'module.manage']);
+     $create = Permission::firstOrCreate(['name' => 'entity.create']);
+     $update = Permission::firstOrCreate(['name' => 'entity.update']);
+
+     $admin = Role::firstOrCreate(['name' => 'admin']);
+     $admin->syncPermissions([$manage, $create, $update]);
+
+     $user = User::first();
+     $user?->assignRole('admin');
+     ```
+  4) Gunakan middleware `can:<permission>` pada routes dan `@can` di Blade. (Opsional: middleware `role:<role>` atau `permission:<perm>` bila alias didaftarkan.)
+  5) Jika mengubah role/permission di runtime, reset cache:
+     ```bash
+     php artisan optimize:clear
+     # atau khusus: php artisan permission:cache-reset
+     ```
+
+**Contoh (routes):**
+```php
+Route::group(['middleware' => ['auth','can:module.manage']], function () {
+    Route::resource('admin/modules', Admin\\ModuleController::class)->except(['show']);
+});
+
+Route::post('entities/{id}/approve', [EntityApprovalController::class, 'approve'])
+    ->middleware(['auth','can:entity.approve'])
+    ->name('entities.approve');
+```
+
+**Contoh (Blade):**
+```blade
+@can('entity.create')
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#entityModal">Tambah</button>
+@endcan
+```
+
 ---
 
 # 5) STANDAR SYSTEM LOGS
@@ -631,78 +720,18 @@ Catatan:
 - Gunakan middleware `can:<permission>` pada routes untuk proteksi endpoint.
 - Di Blade, gunakan `@can('<permission>') ... @endcan` untuk menampilkan aksi/komponen bersyarat.
 
-### 4.2.1 How to setup (Dinamis)
 
-- Pilih salah satu pendekatan berikut dan terapkan konsisten di seluruh proyek.
+---
 
-- Opsi A — Native Gate/Policy Laravel:
-  1) Buat Policy untuk model terkait
-     ```bash
-     php artisan make:policy EntityPolicy --model=Entity
-     ```
-  2) Daftarkan Policy di `App\Providers\AuthServiceProvider`
-     ```php
-     protected $policies = [
-         App\Models\Entity::class => App\Policies\EntityPolicy::class,
-     ];
-     ```
-  3) Implementasikan metode seperti `view`, `create`, `update`, `delete` di Policy.
-  4) Pakai middleware `can:<ability>` pada route, atau panggil `Gate::authorize('<ability>', $entity)` / `$this->authorize('<ability>', $entity)` di controller.
+# 6) Konvensi Khusus Proyek (Checklist)
 
-- Opsi B — Paket spatie/laravel-permission:
-  1) Instal & publish migrasi
-     ```bash
-     composer require spatie/laravel-permission
-     php artisan vendor:publish --provider="Spatie\\Permission\\PermissionServiceProvider"
-     php artisan migrate
-     ```
-  2) Tambahkan trait pada model `User`
-     ```php
-     use Spatie\Permission\Traits\HasRoles;
-
-     class User extends Authenticatable {
-         use HasRoles; // otomatis memakai guard "web" kecuali diubah
-     }
-     ```
-  3) Seed roles & permissions (contoh minimal)
-     ```php
-     use Spatie\Permission\Models\Role;
-     use Spatie\Permission\Models\Permission;
-
-     $manage = Permission::firstOrCreate(['name' => 'module.manage']);
-     $create = Permission::firstOrCreate(['name' => 'entity.create']);
-     $update = Permission::firstOrCreate(['name' => 'entity.update']);
-
-     $admin = Role::firstOrCreate(['name' => 'admin']);
-     $admin->syncPermissions([$manage, $create, $update]);
-
-     $user = User::first();
-     $user?->assignRole('admin');
-     ```
-  4) Gunakan middleware `can:<permission>` pada routes dan `@can` di Blade. (Opsional: middleware `role:<role>` atau `permission:<perm>` bila alias didaftarkan.)
-  5) Jika mengubah role/permission di runtime, reset cache:
-     ```bash
-     php artisan optimize:clear
-     # atau khusus: php artisan permission:cache-reset
-     ```
-
-**Contoh (routes):**
-```php
-Route::group(['middleware' => ['auth','can:module.manage']], function () {
-    Route::resource('admin/modules', Admin\\ModuleController::class)->except(['show']);
-});
-
-Route::post('entities/{id}/approve', [EntityApprovalController::class, 'approve'])
-    ->middleware(['auth','can:entity.approve'])
-    ->name('entities.approve');
-```
-
-**Contoh (Blade):**
-```blade
-@can('entity.create')
-  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#entityModal">Tambah</button>
-@endcan
-```
+- Password default role crew: `Qwerty123*`.
+- URL file lampiran/storage publik: wajib `url('storage/...')`, jangan `asset()`.
+- Sidebar statis per role (admin/crew), tanpa permission dinamis.
+- Controller: resource, validasi `$request->validate()`, redirect+flash (non-AJAX), JSON bila perlu.
+- CRUD master data via Modal (create/edit) + modal konfirmasi delete.
+- Listing: DataTables client-side sebagai default.
+- JS halaman diletakkan di `@push('scripts')`.
 
 **Contoh (Controller check):**
 ```php
