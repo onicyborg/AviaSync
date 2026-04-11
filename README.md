@@ -10,7 +10,6 @@ Referensi standar pengembangan: lihat `AGENTS.md`.
 
 - PHP 8.1+
 - Composer 2.x
-- Node.js 18+ dan npm
 - PostgreSQL 13+
 - Ekstensi PHP umum Laravel (minimal):
   - `pdo_pgsql`
@@ -37,8 +36,10 @@ cd AviaSync
 
 ```bash
 composer install
-npm install
 ```
+
+Catatan:
+- Project ini bisa dijalankan tanpa Node/npm.
 
 ---
 
@@ -110,23 +111,7 @@ Catatan:
 
 ---
 
-## 8) Jalankan Vite (Asset)
-
-Mode development:
-
-```bash
-npm run dev
-```
-
-Atau build production:
-
-```bash
-npm run build
-```
-
----
-
-## 9) Jalankan Server Laravel
+## 8) Jalankan Server Laravel
 
 ```bash
 php artisan serve
@@ -137,7 +122,7 @@ Lalu akses:
 
 ---
 
-## 10) Akun Login Default
+## 9) Akun Login Default
 
 - Admin:
   - Email: `admin@aviasync.com`
@@ -148,7 +133,7 @@ Lalu akses:
 
 ---
 
-## 11) Troubleshooting
+## 10) Troubleshooting
 
 ### A) Error koneksi PostgreSQL saat migrate/seed
 - Pastikan Postgres sedang running.
@@ -165,7 +150,6 @@ Lalu akses:
   - `php artisan migrate:fresh --seed`
 
 ### D) Asset tidak muncul
-- Pastikan `npm run dev` berjalan tanpa error.
 - Coba bersihkan cache:
   - `php artisan optimize:clear`
 
@@ -175,7 +159,7 @@ Lalu akses:
 
 ---
 
-## 12) Command yang Sering Dipakai
+## 11) Command yang Sering Dipakai
 
 ```bash
 # Clear cache
