@@ -7,7 +7,7 @@ Target utama:
 - Menjaga konsistensi **pola CRUD berbasis Modal** (bukan halaman create/edit terpisah) untuk master data.
 - Menjaga konsistensi **pola DataTables** untuk listing.
 - Menjaga konsistensi **pola Controller** (resource controller, validasi via `$request->validate()`), serta **flash message** / JSON response.
-- Menjaga konsistensi **multi-role access** menggunakan middleware `role:...`.
+- Menjaga konsistensi **kontrol akses** (statis berbasis role atau dinamis berbasis permission/policy) sesuai strategi yang dipilih proyek.
 
 ---
 
@@ -32,6 +32,10 @@ Target utama:
   - Ikon: Bootstrap Icons (atau icon set lain yang konsisten).
 
 **Aturan:** setiap halaman baru wajib `@extends('layouts.master')` (atau layout utama proyek) dan meletakkan JS halaman pada `@push('scripts')`.
+
+Tambahan aturan konsistensi proyek (wajib):
+- Password default untuk user role `crew` saat dibuat oleh Admin: `Qwerty123*`.
+- Seluruh URL file lampiran (storage publik) menggunakan `url('storage/...')`, BUKAN `asset()`, agar tidak terpengaruh `ASSET_URL` pada `.env`.
 
 ---
 
@@ -197,15 +201,15 @@ Standar default: CRUD master data dilakukan via submit form normal (bukan AJAX).
 
 ### 1.4.1 Image Input (Metronic `data-kt-image-input`)
 
-Digunakan untuk upload foto guru/siswa dan profile.
+Digunakan untuk upload foto profil pengguna atau entitas lain yang relevan.
 
-**Snippet (teacher modal):**
+**Snippet (profile modal):**
 ```blade
 <div class="image-input image-input-circle" data-kt-image-input="true"
      style="background-image: url('{{ asset('assets/media/svg/avatars/blank.svg') }}')">
-  <div id="teacher_photo_wrapper" class="image-input-wrapper w-125px h-125px"></div>
+  <div id="profile_photo_wrapper" class="image-input-wrapper w-125px h-125px"></div>
   <label class="btn btn-icon btn-circle ..." data-kt-image-input-action="change">
-    <input type="file" name="photo" id="teacher_photo" accept=".png, .jpg, .jpeg, .webp" />
+    <input type="file" name="photo" id="profile_photo" accept=".png, .jpg, .jpeg, .webp" />
   </label>
 </div>
 <div class="invalid-feedback d-block" data-field="photo"></div>
@@ -226,12 +230,12 @@ photoInput?.addEventListener('change', function(){
 
 ### 1.4.2 Select2 untuk Combobox
 
-Ada pola `select2` untuk pemilihan kelas pada modal siswa.
+Pola `select2` untuk combobox umum di dalam modal.
 
 **Snippet:**
 ```js
-$('#student_class_id').select2({
-  dropdownParent: $('#studentModal'),
+$('#generic_select_id').select2({
+  dropdownParent: $('#genericModal'),
   width: '100%'
 });
 ```
@@ -474,78 +478,240 @@ return response()->json([
 
 ---
 
-# 4) MIDDLEWARE & AUTENTIKASI MULTI-ROLE
+# 4) KONTROL AKSES (GENERAL)
 
-## 4.1 Middleware Role
+Dokumen ini mendukung dua pendekatan umum untuk kontrol akses: statis (role tetap) dan dinamis (permission/policy). Pilih salah satu secara konsisten per proyek.
 
-- Alias middleware `role` didaftarkan pada `app/Http/Kernel.php`:
+## 4.1 Kontrol Akses Statis (Role Tetap)
 
+Bagian ini sengaja dikosongkan agar dapat diisi sesuai proyek yang memakai role statis.
+
+- Middleware alias:
 ```php
-protected $middlewareAliases = [
-    ...
+// app/Http/Kernel.php
+protected $routeMiddleware = [
+    // ...
     'role' => \App\Http\Middleware\RoleMiddleware::class,
 ];
 ```
 
-- Implementasi `RoleMiddleware` ada di `app/Http/Middleware/RoleMiddleware.php`.
-
-**Snippet:**
+- Penerapan di routes:
 ```php
-public function handle(Request $request, Closure $next, ...$roles)
+// routes/web.php
+Route::prefix('admin')->middleware(['auth', 'role:admin'])->group(function () {
+    // ... admin routes
+});
+
+Route::prefix('crew')->middleware(['auth', 'role:crew'])->group(function () {
+    // ... crew routes
+});
+```
+
+- Catatan implementasi:
+```text
+// Konvensi RBAC statis proyek ini:
+// 1) Field role berada pada tabel users (mis. 'admin' | 'crew').
+// 2) Sidebar bersifat statis berdasar role, tanpa @can/permission dinamis.
+// 3) Gunakan group route auth+role seperti contoh di atas untuk seluruh modul.
+// 4) Redirect pasca-login diarahkan ke dashboard sesuai role.
+```
+
+- Implementasi middleware sederhana:
+```php
+// app/Http/Middleware/RoleMiddleware.php
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class RoleMiddleware
 {
-    if (!Auth::check()) {
-        return redirect()->route('login');
-    }
-
-    foreach ($roles as $role) {
-        if (Auth::user()->role == $role) {
-            return $next($request);
+    public function handle(Request $request, Closure $next, string $role)
+    {
+        if (!Auth::check() || Auth::user()->role !== $role) {
+            abort(403);
         }
+        return $next($request);
     }
-
-    return abort(403, 'Unauthorized');
 }
 ```
 
-**Aturan:**
-- Role check berbasis kolom `users.role` (string) dengan nilai sesuai kebutuhan proyek (contoh: `admin`, `teacher`, `student`).
-- Unauthorized ditangani dengan `abort(403, 'Unauthorized')`.
+---
+
+## 4.2 Kontrol Akses Dinamis (Permission/Policy)
+
+Pendekatan dinamis menggunakan permission-key dan/atau policy untuk mengatur akses granular. Bisa memanfaatkan Gate/Policy native Laravel atau paket seperti `spatie/laravel-permission`.
+
+**Prinsip umum:**
+- User dapat memiliki banyak role dan mewarisi banyak permission.
 
 ---
 
-## 4.2 Penerapan di Routes
+# 5) STANDAR SYSTEM LOGS
 
-Pola route group multi-role ada di `routes/web.php`.
+Seluruh aksi penting sistem dicatat ke tabel `system_logs` (lihat migration `database/migrations/2026_04_05_111609_create_system_logs_table.php`). Struktur kolom utama:
+- `id` (UUID), `user_id` (nullable)
+- `action` (string) — contoh: `created`, `updated`, `deleted`, `assigned`, `unassigned`, `login`, `logout`
+- `table_name` (string), `record_id` (UUID id dari entitas)
+- `old_values` (json), `new_values` (json)
+- `method` (HTTP method), `url` (full URL), `request_payload` (json body/query), `ip_address`
 
-**Snippet:**
+## 5.1 Setup
+- Pastikan migration telah dijalankan (kolom sesuai file migration).
+- Buat model `App\Models\SystemLog` (jika belum ada) dan relasi di `User` sudah ada (`user->systemLogs()`).
+- Disarankan menambahkan helper/trait untuk mempermudah pencatatan.
+
+Contoh helper sederhana:
 ```php
-Route::group(['middleware' => ['auth','role:admin']], function () {
-    Route::resource('batches', BatchController::class)->except(['show']);
-    Route::resource('classes', SchoolClassController::class)->except(['show']);
-    Route::resource('teachers', TeacherController::class)->except(['show']);
-    Route::resource('students', StudentController::class)->except(['show']);
-});
+// app/Support/SystemLogger.php
+namespace App\Support;
 
-Route::group(['middleware' => ['auth','role:teacher']], function () {
-    Route::prefix('teacher/attendances')->name('teacher.attendances.')->group(function () {
-        Route::get('/', [TeacherAttendanceHistoryController::class, 'index'])->name('index');
-        ...
-    });
+use App\Models\SystemLog;
+use Illuminate\Support\Facades\Auth;
 
-    Route::resource('teacher/students', TeacherStudentController::class)
-        ->except(['show'])->names('teacher.students');
-});
-
-Route::group(['middleware' => ['auth','role:student']], function () {
-    Route::get('/student/attendances', [StudentAttendanceController::class, 'index'])
-        ->name('student.attendances.index');
-});
+class SystemLogger
+{
+    public static function record(string $action, string $table, string $recordId, array $old = null, array $new = null): void
+    {
+        $req = request();
+        SystemLog::create([
+            'user_id' => Auth::id(),
+            'action' => $action,
+            'table_name' => $table,
+            'record_id' => $recordId,
+            'old_values' => $old,
+            'new_values' => $new,
+            'method' => $req?->method(),
+            'url' => $req?->fullUrl(),
+            'request_payload' => $req?->all(),
+            'ip_address' => $req?->ip(),
+        ]);
+    }
+}
 ```
 
-**Aturan:**
-- Admin: resource route sederhana (tanpa prefix khusus).
-- Teacher: modul yang scoped memakai `prefix('teacher/...')` dan penamaan `teacher.*`.
-- Student: prefix `student/...` dan penamaan `student.*`.
+## 5.2 Penggunaan (Standarisasi di Controller)
+
+- **Create (store):** catat `action = created`, `old_values = null`, `new_values = payload akhir`.
+```php
+$model = Model::create($payload);
+SystemLogger::record('created', 'models', $model->id, null, $model->toArray());
+```
+
+- **Update:** catat `action = updated`, simpan diff atau snapshot lama/baru (minimal snapshot).
+```php
+$before = $model->replicate()->toArray();
+$model->update($payload);
+SystemLogger::record('updated', 'models', $model->id, $before, $model->toArray());
+```
+
+- **Delete:** catat `action = deleted`, `old_values = snapshot sebelum delete`.
+```php
+$before = $model->toArray();
+$model->delete();
+SystemLogger::record('deleted', 'models', $model->id, $before, null);
+```
+
+- **Pivot assign/unassign (contoh assign crew ke flight):**
+```php
+// assign
+$flight->crews()->attach($crewId, [...]);
+SystemLogger::record('assigned', 'crew_flight_schedules', $assignmentId, null, ['flight_id' => $flight->id, 'crew_id' => $crewId]);
+
+// unassign
+$flight->crews()->detach($assignmentId);
+SystemLogger::record('unassigned', 'crew_flight_schedules', $assignmentId, ['flight_id' => $flight->id, 'crew_id' => $crewId], null);
+```
+
+Catatan:
+- Gunakan nama `table_name` sesuai nama tabel database.
+- Pastikan `record_id` menyimpan UUID dari entitas asli/pivot.
+- `request_payload` boleh dibersihkan dari field sensitif (password, token) sebelum dicatat.
+- Gunakan middleware `can:<permission>` pada routes untuk proteksi endpoint.
+- Di Blade, gunakan `@can('<permission>') ... @endcan` untuk menampilkan aksi/komponen bersyarat.
+
+### 4.2.1 How to setup (Dinamis)
+
+- Pilih salah satu pendekatan berikut dan terapkan konsisten di seluruh proyek.
+
+- Opsi A — Native Gate/Policy Laravel:
+  1) Buat Policy untuk model terkait
+     ```bash
+     php artisan make:policy EntityPolicy --model=Entity
+     ```
+  2) Daftarkan Policy di `App\Providers\AuthServiceProvider`
+     ```php
+     protected $policies = [
+         App\Models\Entity::class => App\Policies\EntityPolicy::class,
+     ];
+     ```
+  3) Implementasikan metode seperti `view`, `create`, `update`, `delete` di Policy.
+  4) Pakai middleware `can:<ability>` pada route, atau panggil `Gate::authorize('<ability>', $entity)` / `$this->authorize('<ability>', $entity)` di controller.
+
+- Opsi B — Paket spatie/laravel-permission:
+  1) Instal & publish migrasi
+     ```bash
+     composer require spatie/laravel-permission
+     php artisan vendor:publish --provider="Spatie\\Permission\\PermissionServiceProvider"
+     php artisan migrate
+     ```
+  2) Tambahkan trait pada model `User`
+     ```php
+     use Spatie\Permission\Traits\HasRoles;
+
+     class User extends Authenticatable {
+         use HasRoles; // otomatis memakai guard "web" kecuali diubah
+     }
+     ```
+  3) Seed roles & permissions (contoh minimal)
+     ```php
+     use Spatie\Permission\Models\Role;
+     use Spatie\Permission\Models\Permission;
+
+     $manage = Permission::firstOrCreate(['name' => 'module.manage']);
+     $create = Permission::firstOrCreate(['name' => 'entity.create']);
+     $update = Permission::firstOrCreate(['name' => 'entity.update']);
+
+     $admin = Role::firstOrCreate(['name' => 'admin']);
+     $admin->syncPermissions([$manage, $create, $update]);
+
+     $user = User::first();
+     $user?->assignRole('admin');
+     ```
+  4) Gunakan middleware `can:<permission>` pada routes dan `@can` di Blade. (Opsional: middleware `role:<role>` atau `permission:<perm>` bila alias didaftarkan.)
+  5) Jika mengubah role/permission di runtime, reset cache:
+     ```bash
+     php artisan optimize:clear
+     # atau khusus: php artisan permission:cache-reset
+     ```
+
+**Contoh (routes):**
+```php
+Route::group(['middleware' => ['auth','can:module.manage']], function () {
+    Route::resource('admin/modules', Admin\\ModuleController::class)->except(['show']);
+});
+
+Route::post('entities/{id}/approve', [EntityApprovalController::class, 'approve'])
+    ->middleware(['auth','can:entity.approve'])
+    ->name('entities.approve');
+```
+
+**Contoh (Blade):**
+```blade
+@can('entity.create')
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#entityModal">Tambah</button>
+@endcan
+```
+
+**Contoh (Controller check):**
+```php
+if (!auth()->user()->can('entity.update')) {
+    abort(403);
+}
+```
+
+Gunakan Policy untuk skenario yang bergantung pada instance model (ownership, scoping data), dengan method seperti `view`, `update`, `delete`.
 
 ---
 
@@ -586,17 +752,16 @@ class Student extends Model
 
 ### 5.1.3 Penamaan Relasi
 
-Relasi memakai nama yang jelas dan konsisten:
-- `Student::schoolClass()` (belongsTo)
-- `SchoolClass::students()` (hasMany)
-- `User::homeroomClasses()` (hasMany)
-- `User::student()` (hasOne)
+Relasi memakai nama yang jelas dan konsisten (generik):
+- `Order::customer()` (belongsTo)
+- `Customer::orders()` (hasMany)
+- `User::profile()` (hasOne)
 
 **Snippet:**
 ```php
-public function schoolClass(): BelongsTo
+public function customer(): BelongsTo
 {
-    return $this->belongsTo(SchoolClass::class, 'class_id');
+    return $this->belongsTo(Customer::class, 'customer_id');
 }
 ```
 
@@ -607,14 +772,11 @@ public function schoolClass(): BelongsTo
 - Route `resource()` dipakai untuk master data.
 - Route group memakai middleware array dan kadang `prefix` + `name()`.
 - Naming mengikuti Laravel default untuk resource:
-  - `batches.index`, `batches.store`, `batches.update`, dll.
-- Untuk modul teacher yang resource tetapi path mengandung slash, gunakan `->names('teacher.students')`.
+  - `entities.index`, `entities.store`, `entities.update`, dll.
 
 **Aturan:**
-- Jika membuat route baru untuk role tertentu:
-  - Masukkan ke group `['middleware' => ['auth','role:<role>']]`.
-  - Pakai prefix konsisten `teacher/...` atau `student/...`.
-  - Pastikan `name()` mengikuti namespace `teacher.*` atau `student.*`.
+- Jika membuat route baru untuk area administrasi, gunakan prefix `admin/...` dan namespace `admin.*` bila diperlukan.
+- Terapkan middleware akses sesuai strategi kontrol akses yang dipilih (statis/dinamis) secara konsisten.
 
 ---
 
